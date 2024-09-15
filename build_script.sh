@@ -4,7 +4,7 @@
 # Build support you to
 #       - Completely build your system( with buildroot)
 #       - Prepare sdk: just make sdk then copy to crosstool folder
-#       
+#
 #
 USAGE=$"usage: build_script.sh (-setup | -full | -app | -rebuild_rootfs | -clean | -sdk)"
 
@@ -90,12 +90,14 @@ build_crosstool()
 setup()
 {
     echo "Setting up environment"
-    if [ ! -d "crosstool" ]; then 
+    if [ ! -d "crosstool" ]; then
         tar -xvf crosstool.tar.gz
     fi
     export CROSSTOOL_PATH=${PWD}/crosstool
+    export PKG_PATH=${PWD}/telematic_pkg
     export CC=${PWD}/crosstool/bin/arm-buildroot-linux-gnueabi-gcc
     export CXX=${PWD}/crosstool/bin/arm-buildroot-linux-gnueabi-g++
+    export OEM_DEST_BIN=${PWD}/rootfs_overlays/oem/bin
     # dont forget to set sysroot path in your CMake/Makefiles
     echo "Setting up environment done"
 }
@@ -104,9 +106,10 @@ clean()
 {
     echo "Do cleaning output/telematic_pkg"
     rm -rf output/telematic_pkg
-    if [ -d "crosstool" ]; then 
+    if [ -d "crosstool" ]; then
         rm -rf crosstool
     fi
+    rm -rf rootfs_overlays/oem/bin*
 }
 
 build_app()
@@ -117,11 +120,14 @@ build_app()
     mkdir -p telematic_pkg
     cd telematic_pkg
     cmake ../../telematic_pkg
+    make
+    make install
     cd ../..
 }
 
 rebuild_rootfs()
 {
+    build_app
     echo "Becarefully, disable build for kernel, just rootfs and package"
     local temp_name=/tmp/${BUILD_DATE}_${BUILD_TIME_EXT}_config
     cp .config ${temp_name}

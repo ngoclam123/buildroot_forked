@@ -1,25 +1,28 @@
 #!/bin/sh
+#
+# Starts Network Time Protocol daemon
+#
 
-DAEMON="syslogd"
+DAEMON="ntpd"
 PIDFILE="/var/run/$DAEMON.pid"
 
-SYSLOGD_ARGS=" -O /mnt/data/messages -s 200 -b 99"
+NTPD_ARGS=" -g"
 
 # shellcheck source=/dev/null
 [ -r "/etc/default/$DAEMON" ] && . "/etc/default/$DAEMON"
 
-# BusyBox' syslogd does not create a pidfile, so pass "-n" in the command line
-# and use "-m" to instruct start-stop-daemon to create one.
 start() {
 	printf 'Starting %s: ' "$DAEMON"
 	# shellcheck disable=SC2086 # we need the word splitting
-	start-stop-daemon -b -m -S -q -p "$PIDFILE" -x "/sbin/$DAEMON" \
-		-- -n $SYSLOGD_ARGS
+	start-stop-daemon -S -q -p "$PIDFILE" -x "/usr/sbin/$DAEMON" \
+		-- $NTPD_ARGS -p "$PIDFILE"
 	status=$?
 	if [ "$status" -eq 0 ]; then
 		echo "OK"
 	else
-		echo "FAIL"
+		echo "START FAIL - RETRY"
+		sleep 1
+		start
 	fi
 	return "$status"
 }
